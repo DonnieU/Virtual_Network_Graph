@@ -3,8 +3,9 @@ import argparse
 import random
 
 class Vertex:
-  def __init__(self, node):
+  def __init__(self, node, node_weight):
     self.id = node
+    self.node_weight = node_weight
     self.adjacent = {}
 
   def __str__(self):
@@ -37,10 +38,11 @@ class Graph:
   def __iter__(self):
     return iter(self.vert_dict.values())
 
-  def add_vertex(self, node):
+  def add_vertex(self, node, node_weight):
     self.num_vertices = self.num_vertices + 1
-    new_vertex = Vertex(node)
+    new_vertex = Vertex(node, node_weight)
     self.vert_dict[node] = new_vertex
+    print "node= " + str(node) + " new_vertex= " + str(new_vertex)
     return new_vertex
 
   def get_vertex(self, n):
@@ -59,7 +61,7 @@ class Graph:
     self.vert_dict[dest].add_neighbor(self.vert_dict[src], weight)
 
   def get_vertices(self):
-    return self.vert_dict.keys()
+    return self.vert_dict.keys() 
 
   def set_num_nodes(self, n):
     self.num_nodes = n
@@ -103,12 +105,14 @@ class Graph:
   def get_link_max(self):
     return self.link_max
 
+### END classes ###
+
 def print_graph(g):
   for v in g:
     for w in v.get_connections():
       vid = v.get_id()
       wid = w.get_id()
-      print '(%s, %s, %3d)' % ( vid, wid, v.get_weight(w))
+      print '%s %s %3d' % ( vid, wid, v.get_weight(w))
 
   for v in g:
     print 'g.vert_dict[%s]=%s' %(v.get_id(), g.vert_dict[v.get_id()])
@@ -116,33 +120,28 @@ def print_graph(g):
 
 if __name__ == '__main__':
   """
-  g = Graph()
+  g_test = Graph()
   
-  g.add_vertex('a')
-  g.add_vertex('b')
-  g.add_vertex('c')
-  g.add_vertex('d')
-  g.add_vertex('e')
-  g.add_vertex('f')
+  g_test.add_vertex('a')
+  g_test.add_vertex('b')
+  g_test.add_vertex('c')
+  g_test.add_vertex('d')
+  g_test.add_vertex('e')
+  g_test.add_vertex('f')
 
-  g.add_edge('a', 'b', 7)
-  g.add_edge('a', 'c', 9)
-  g.add_edge('a', 'f', 14)
-  g.add_edge('b', 'c', 10)
-  g.add_edge('b', 'd', 15)
-  g.add_edge('c', 'd', 11)
-  g.add_edge('c', 'f', 2)
-  g.add_edge('d', 'e', 6)
-  g.add_edge('e', 'f', 9)
+  g_test.add_edge('a', 'b', 7)
+  g_test.add_edge('a', 'c', 9)
+  g_test.add_edge('a', 'f', 14)
+  g_test.add_edge('b', 'c', 10)
+  g_test.add_edge('b', 'd', 15)
+  g_test.add_edge('c', 'd', 11)
+  g_test.add_edge('c', 'f', 2)
+  g_test.add_edge('d', 'e', 6)
+  g_test.add_edge('e', 'f', 9)
 
-  for v in g:
-    for w in v.get_connections():
-      vid = v.get_id()
-      wid = w.get_id()
-      print '(%s, %s, %3d)' % ( vid, wid, v.get_weight(w))
-
-  for v in g:
-    print 'g.vert_dict[%s]=%s' %(v.get_id(), g.vert_dict[v.get_id()])
+  print g_test.get_vertices()
+  print ""
+  print ""
   """
 
   #f = open('four_node_linear_config.txt')
@@ -189,20 +188,27 @@ if __name__ == '__main__':
       continue
 
   f.close()
-
+  
+  
   print "nodes: " + str(g.get_num_nodes()) 
   print "topology: " + g.get_topology() + " " + str(len(g.get_topology()))
   print "alpha: " + str(g.get_alpha())
   print "link_max: " + str(g.get_link_max())
-  for i in range(g.get_num_nodes()):
-    weight = int(random.uniform(g.get_link_min(), g.get_link_max()))
-    print "random.uniform for link weight: " + str(weight) 
+  #for i in range(g.get_num_nodes()):
+  #  weight = int(random.uniform(g.get_link_min(), g.get_link_max()))
+  #  print "random.uniform for link weight: " + str(weight) 
   #print g.__dict__
+
+  for i in range(g.get_num_nodes()):
+    node_weight = int(random.uniform(g.get_node_min(), g.get_node_max()))
+    g.add_vertex(i, node_weight)
+
+  print g.get_vertices()
 
   if (g.get_topology() == "linear"):
     for i in range(g.get_num_nodes()-1):
       link_weight = int(random.uniform(g.get_link_min(), g.get_link_max()))
       g.add_edge(i,i+1,link_weight)
       
-  #print_graph(g) 
+  print_graph(g) 
   print g.get_vertices()
