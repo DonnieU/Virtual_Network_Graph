@@ -20,10 +20,13 @@ class Vertex:
   def get_id(self):
     return self.id
 
-  def get_weight(self, neighbor):
+  def get_edge_weight(self, neighbor):
     return self.adjacent[neighbor]
 
-class Graph:
+  def get_node_weight(self):
+    return self.node_weight
+
+class Graph():
   def __init__(self):
     self.vert_dict = {}
     self.num_vertices = 0
@@ -42,7 +45,7 @@ class Graph:
     self.num_vertices = self.num_vertices + 1
     new_vertex = Vertex(node, node_weight)
     self.vert_dict[node] = new_vertex
-    print "node= " + str(node) + " new_vertex= " + str(new_vertex)
+    #print "node= " + str(node) + " new_vertex= " + str(new_vertex)
     return new_vertex
 
   def get_vertex(self, n):
@@ -58,7 +61,8 @@ class Graph:
       self.add_vertex(dest)
 
     self.vert_dict[src].add_neighbor(self.vert_dict[dest], weight)
-    self.vert_dict[dest].add_neighbor(self.vert_dict[src], weight)
+    ### If directed graph, uncomment below... """
+    #self.vert_dict[dest].add_neighbor(self.vert_dict[src], weight)
 
   def get_vertices(self):
     return self.vert_dict.keys() 
@@ -112,10 +116,13 @@ def print_graph(g):
     for w in v.get_connections():
       vid = v.get_id()
       wid = w.get_id()
-      print '%s %s %3d' % ( vid, wid, v.get_weight(w))
+      print '%s %s %3d' % ( vid, wid, v.get_edge_weight(w))
 
   for v in g:
-    print 'g.vert_dict[%s]=%s' %(v.get_id(), g.vert_dict[v.get_id()])
+    print v.get_node_weight(),
+  
+  #for v in g:
+  #  print 'g.vert_dict[%s]=%s' %(v.get_id(), g.vert_dict[v.get_id()])
 
 
 if __name__ == '__main__':
@@ -203,7 +210,7 @@ if __name__ == '__main__':
     node_weight = int(random.uniform(g.get_node_min(), g.get_node_max()))
     g.add_vertex(i, node_weight)
 
-  print g.get_vertices()
+  #print g.get_vertices()
 
   if (g.get_topology() == "linear"):
     for i in range(g.get_num_nodes()-1):
@@ -211,4 +218,4 @@ if __name__ == '__main__':
       g.add_edge(i,i+1,link_weight)
       
   print_graph(g) 
-  print g.get_vertices()
+  #print g.get_vertices()
