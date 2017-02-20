@@ -4,9 +4,9 @@ Built with: Python 2.7.11 on Linux version 4.3.0-kalil-amd64
 
 To run:
 
-python VirtualNetworkGraph.py <configfile>
+python VirtualNetworkGraph.py "<configfile>"
 
-where <configfile> contains the following format:
+where "<configfile>" contains the following format:
 
 nodes:          4
 topology:       LINEAR
@@ -21,7 +21,7 @@ topology is case insensitive and supports Linear, Full, Star, & Random;
 alpha range: 0.0 <= alpha <= 1.0;
 See included *.txt files for examples;
 
-Program outputs a <topology>.out file containing this layout:
+Program outputs a "<topology>".out file containing this layout:
 
 Source-Node-ID    Destination-Node-ID    Link0-weight
 Source-Node-ID    Destination-Node-ID    Link1-weight
