@@ -11,7 +11,7 @@ class Vertex:
   def __str__(self):
     return str(self.id) + ' adjacent: ' + str([x.id for x in self.adjacent])
 
-  def add_neighbor(self, neighbor, weight=0):
+  def add_neighbor(self, neighbor, weight=1):
     self.adjacent[neighbor] = weight
 
   def get_connections(self):
@@ -32,7 +32,7 @@ class Graph():
     self.num_vertices = 0
     self.num_nodes = 0
     self.topology = ""
-    self.alpha = 0
+    self.alpha = 0  # int of range = 0-100
     self.node_min = 0
     self.node_max = 0
     self.link_min = 0
@@ -90,7 +90,7 @@ class Graph():
 
   def get_node_min(self):
     return self.node_min
- 
+
   def set_node_max(self, n):
     self.node_max = n
 
@@ -111,48 +111,58 @@ class Graph():
 
 ### END classes ###
 
+### make full (mesh) connected graph
+def make_full(g):
+  for node in g:
+    for other_node in g:
+      link_weight = int(random.uniform(g.get_link_min(), g.get_link_max()))
+      if (other_node == node):
+	continue
+      else:
+        g.add_edge(node.get_id(), other_node.get_id(), link_weight)  
+
+def biased_coin_flip(g):
+  alpha = g.get_alpha()
+  coin_bias = random.uniform(1,100)
+  if (coin_bias <= alpha):
+    return 1 # Head
+  return 0 # Tail
+ 
 def print_graph(g):
-  for v in g:
-    for w in v.get_connections():
-      vid = v.get_id()
-      wid = w.get_id()
-      print '%s %s %3d' % ( vid, wid, v.get_edge_weight(w))
+  for node in g:
+    for neighbor in node.get_connections():
+      nodeid = node.get_id()
+      neighborid = neighbor.get_id()
+      print '%3d %3d %4d' % ( nodeid, neighborid, node.get_edge_weight(neighbor))
 
-  for v in g:
-    print v.get_node_weight(),
+  for node in g:
+    print node.get_node_weight(),
   
-  #for v in g:
-  #  print 'g.vert_dict[%s]=%s' %(v.get_id(), g.vert_dict[v.get_id()])
+  print ""
+  """ Debug: Shows current node and adjacent node(s)
+  for node in g:
+    print 'g.vert_dict[%s]=%s' %(node.get_id(), g.vert_dict[node.get_id()])
+  """
 
+### writes graph out to file w/ filename: <topology>.out
+def save_graph(g):
+  f = open(g.get_topology()+'.out', 'w')
+  for node in g:
+    for neighbor in node.get_connections():
+      nodeid = node.get_id()
+      neighborid = neighbor.get_id()
+      f.writelines('%3d %3d %4d\n' % ( nodeid, neighborid, node.get_edge_weight(neighbor)))
+
+  for node in g:
+    f.write(str(node.get_node_weight())+ " " )
+
+  f.flush()
+  f.close()
+  
+### END functions ###
 
 if __name__ == '__main__':
-  """
-  g_test = Graph()
-  
-  g_test.add_vertex('a')
-  g_test.add_vertex('b')
-  g_test.add_vertex('c')
-  g_test.add_vertex('d')
-  g_test.add_vertex('e')
-  g_test.add_vertex('f')
 
-  g_test.add_edge('a', 'b', 7)
-  g_test.add_edge('a', 'c', 9)
-  g_test.add_edge('a', 'f', 14)
-  g_test.add_edge('b', 'c', 10)
-  g_test.add_edge('b', 'd', 15)
-  g_test.add_edge('c', 'd', 11)
-  g_test.add_edge('c', 'f', 2)
-  g_test.add_edge('d', 'e', 6)
-  g_test.add_edge('e', 'f', 9)
-
-  print g_test.get_vertices()
-  print ""
-  print ""
-  """
-
-  #f = open('four_node_linear_config.txt')
-  #print f.read()
   topology = ""
   alpha = 0
   link_max = 0
@@ -174,15 +184,22 @@ if __name__ == '__main__':
 
   g = Graph()
 
+  # Parse file line by line...
   for line in f:
     lhs, rhs = line.split(":")
+    lhs = lhs.lower()
     #print lhs, rhs
     if (lhs == "nodes"):
       g.set_num_nodes(int(rhs))
     elif (lhs == "topology"):
       g.set_topology(str(rhs).strip().lower())  # removes leading and ending whitespace; makes lowercase
-    elif ((topology == "random") and (lhs == "alpha")):
-      g.set_alpha(int(rhs))
+    elif ((lhs == "alpha") and (g.get_topology() == "random")):
+      alpha = int(float(rhs)*100)
+      g.set_alpha(alpha)
+      #print g.get_topology() + " " + str(alpha) + " " + str(g.get_alpha())
+      if ( (g.get_alpha() < 0) or (g.get_alpha() > 100) ):
+        print "Invalid range for alpha! Must be a decimal from 0.0-1.0"
+        sys.exit()
     elif (lhs == "node-min"):
       g.set_node_min(int(rhs))
     elif (lhs == "node-max"):
@@ -196,26 +213,50 @@ if __name__ == '__main__':
 
   f.close()
   
-  
+  """ Debug...
   print "nodes: " + str(g.get_num_nodes()) 
-  print "topology: " + g.get_topology() + " " + str(len(g.get_topology()))
+  print "topology: " + g.get_topology()
   print "alpha: " + str(g.get_alpha())
   print "link_max: " + str(g.get_link_max())
-  #for i in range(g.get_num_nodes()):
-  #  weight = int(random.uniform(g.get_link_min(), g.get_link_max()))
-  #  print "random.uniform for link weight: " + str(weight) 
-  #print g.__dict__
+  """
 
   for i in range(g.get_num_nodes()):
     node_weight = int(random.uniform(g.get_node_min(), g.get_node_max()))
     g.add_vertex(i, node_weight)
 
-  #print g.get_vertices()
-
   if (g.get_topology() == "linear"):
-    for i in range(g.get_num_nodes()-1):
+    for i in range(0, g.get_num_nodes()-1):
       link_weight = int(random.uniform(g.get_link_min(), g.get_link_max()))
       g.add_edge(i,i+1,link_weight)
-      
-  print_graph(g) 
-  #print g.get_vertices()
+  elif (g.get_topology() == "full"):
+    make_full(g)
+  elif (g.get_topology() == "star"):
+    hub_node = 0 
+    for i in range(1, g.get_num_nodes()):    
+      link_weight = int(random.uniform(g.get_link_min(), g.get_link_max()))
+      g.add_edge(hub_node, i, link_weight)
+  elif (g.get_topology() == "random"):
+    if (g.get_alpha() == 100):
+      make_full(g)  
+    elif (g.get_alpha() == 0):
+      """ Make no connections """
+      pass
+    else:
+      """ Generates edges based on biased coin flip:
+            If heads: add edge
+            else: do not add edge
+          Iterates over each possible pair of nodes.
+          If alpha = 1, result is full graph.
+          If alpha = 0, result is graph with no links. """
+      for node in g:
+        for other_node in g:
+          if (other_node == node):
+	    continue
+          else:
+            heads = biased_coin_flip(g) 
+            if heads:
+              link_weight = int(random.uniform(g.get_link_min(), g.get_link_max()))
+              g.add_edge(node.get_id(), other_node.get_id(), link_weight)  
+
+  #print_graph(g) 
+  save_graph(g)

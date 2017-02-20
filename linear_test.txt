@@ -1,0 +1,7 @@
+nodes:		4
+topology:	LINEAR
+alpha:		34
+node-min:	20
+node-max:	40
+link-min:	10
+link-max:	30
