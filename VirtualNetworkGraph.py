@@ -139,10 +139,15 @@ def print_graph(g):
     print node.get_node_weight(),
   
   print ""
-  """ Debug: Shows current node and adjacent node(s)
+  #""" Debug: Shows current node and adjacent node(s)
   for node in g:
     print 'g.vert_dict[%s]=%s' %(node.get_id(), g.vert_dict[node.get_id()])
-  """
+
+  print g.get_vertices()
+  for node in g:
+    print len(node.adjacent.keys()),
+  print ""
+  #"""
 
 ### writes graph out to file w/ filename: <topology>.out
 def save_graph(g):
@@ -159,6 +164,36 @@ def save_graph(g):
   f.flush()
   f.close()
   
+def is_connected(g):
+  unvisited = g.get_vertices() 
+  connections = [] # hold all edge pairs
+  # Populate connections with edge pairs as a 2-tuple
+  for node in g:
+   for neighbor in node.get_connections():
+     nodeid = node.get_id()
+     neighborid = neighbor.get_id()
+     connections.append((nodeid,neighborid))
+  print unvisited
+  print connections
+
+  # Quick check: (# of edges) must equal (# of vertices - 1)
+  if len(connections) < (len(unvisited)-1):
+    return False 
+  else:
+    connected = True
+
+  #while connected or unvisited:
+  while connected:
+    #node = connections[0][0] 
+    #neighbor = connections[0][1] 
+    for pair in connections:
+      for nodes in pair:
+        print nodes,
+
+    # for debug to break loop
+    print ""
+    connected = False
+  return connected
 ### END functions ###
 
 if __name__ == '__main__':
@@ -258,5 +293,6 @@ if __name__ == '__main__':
               link_weight = int(random.uniform(g.get_link_min(), g.get_link_max()))
               g.add_edge(node.get_id(), other_node.get_id(), link_weight)  
 
-  #print_graph(g) 
-  save_graph(g)
+  print_graph(g) 
+  #save_graph(g)
+  print is_connected(g)
