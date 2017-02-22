@@ -15,19 +15,14 @@ from mininet.log import setLogLevel, info
 def createNet(filename):
     linkList = []
     switchList = []
-    
+    hostList = []
+ 
     "Create an empty network and add nodes to it."
-
     net = Mininet( controller=Controller )
 
     info( '*** Adding controller\n' )
     net.addController( 'c0' )
 
-    #info( '*** Adding hosts\n' )
-    #h1 = net.addHost( 'h1', ip='10.16.0.1/24' )
-    #h2 = net.addHost( 'h2', ip='10.16.0.2/24' )
-
-    info( '*** Adding switches\n' )
     try:
         f = open(filename)
     except IOError:
@@ -40,13 +35,19 @@ def createNet(filename):
         else:
             # Parse lines and create a list of link pairs
             node1, node2, weight = line.split()
-            node1 = "s"+str(node1).strip()
-            node2 = "s"+str(node2).strip()
-            linkList.append((node1,node2))
+            s1 = "s"+str(node1).strip()
+            s2 = "s"+str(node2).strip()
+            linkList.append((s1,s2))
+            h1 = "h"+str(node1).strip()
+            h2 = "h"+str(node2).strip()
+            if h1 not in hostList:
+              hostList.append(h1)
+            if h2 not in hostList:
+              hostList.append(h2)
             
     f.close()
 
-    # Add switches 
+    info( '*** Adding switches\n' )
     for (node1,node2) in linkList:
 	if node1 not in switchList:
 	    switchList.append(node1)
@@ -56,12 +57,41 @@ def createNet(filename):
             switchList.append(node2) 
 	    net.addSwitch(node2)
 	    #print switchList 
-	    #net.addLink(node1, node2)
 
-    info( '*** Creating links\n' )
-    for (node1,node2) in linkList:
-        net.addLink(node1,node2)
-     
+    info( '*** Adding hosts\n' )
+    for host in hostList:
+        net.addHost(host)
+
+    nodes = [node for node in switchList]
+    currHost = 0
+    # Expects specific filenames. :\
+    if (filename == "linear.out"):
+        info( '*** Creating switch and host links for LINEAR network\n' )
+        for (node1,node2) in linkList:
+  	    net.addLink(node1,node2)
+   	    net.addLink(hostList[currHost],node1)
+	    currHost = currHost + 1 
+        # Add last host to last node2 switch...
+        net.addLink(hostList[currHost], linkList[currHost-1][1])
+    elif ((filename == "full.out") or (filename == "random.out")):
+        info( '*** Creating switch and host links for FULL network\n' )
+        for (node1, node2) in linkList:
+            net.addLink(node1,node2)
+            # Stops duplicate additions where a switch has connected neighbors
+            if node1 in nodes:
+                net.addLink(hostList[currHost],node1)
+                nodes.remove(node1) 
+                currHost = currHost + 1
+    elif (filename == "star.out"):
+        info( '*** Creating switch and host links for STAR network\n' )
+        for (node1, node2) in linkList:
+            net.addLink(node1,node2)
+            net.addLink(hostList[currHost], node2)
+            currHost = currHost + 1 
+        # Add last host to root switch, s0; still maintains star configuration
+        net.addLink(hostList[currHost], linkList[0][0])
+
+
     info( '*** Starting network\n')
     net.start()
 
