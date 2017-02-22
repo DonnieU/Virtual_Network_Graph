@@ -42,3 +42,8 @@ To use:
 sudo python vng.py <filename.out>
 ```
 where *filename.out* is an output file from VirtualNetworkGraph.py<br>
+
+### vng_w_STP.py = same functionality as vng.py above, but:<br>
+* This incorporates a LinuxBridge with Spanning Tree Protocol (STP)<br>
+* Will wait for STP convergence if topology is: FULL or RANDOM<br> 
+* Performed to deal with loops due to multiple links<br>
