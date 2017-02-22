@@ -2,6 +2,8 @@ import sys
 import argparse
 import random
 
+CONNECTED=True
+
 class Vertex:
   def __init__(self, node, node_weight):
     self.id = node
@@ -47,12 +49,24 @@ class Graph():
     self.vert_dict[node] = new_vertex
     #print "node= " + str(node) + " new_vertex= " + str(new_vertex)
     return new_vertex
+  
+  def remove_vertex(self, node):
+    if node in self.vert_dict:
+      return self.vert_dict.pop(node)
+    else:
+      return None
+
+  def remove_vertices(self):
+    self.vert_dict = {}
 
   def get_vertex(self, n):
     if n in self.vert_dict:
       return self.vert_dict[n]
     else:
       return None
+
+  def get_vertices(self):
+    return self.vert_dict.keys() 
 
   def add_edge(self, src, dest, weight = 0):
     if src not in self.vert_dict:
@@ -63,9 +77,6 @@ class Graph():
     self.vert_dict[src].add_neighbor(self.vert_dict[dest], weight)
     ### If directed graph, uncomment below... """
     #self.vert_dict[dest].add_neighbor(self.vert_dict[src], weight)
-
-  def get_vertices(self):
-    return self.vert_dict.keys() 
 
   def set_num_nodes(self, n):
     self.num_nodes = n
@@ -163,52 +174,48 @@ def save_graph(g):
 
   f.flush()
   f.close()
-  
-def search_neighbors(node):
-  
-def is_connected(g):
-  visited = []
-  unvisited = g.get_vertices() 
-  currNode = unvisited[0]
-  while (len(visited) != len(g.get_vertices()):
-    if unvisited:
-      visited.append(currNode)
-      unvisited.pop(currNode)
+ 
+def search_neighbors(node, unvisited, visited):
+  global CONNECTED
+  if CONNECTED:
+    if node in unvisited:
+      unvisited.remove(node) 
+      #print "Removing node %s from unvisited" %(node)
+      visited.append(node)
       if node.get_connections():
-    
-    
-  connections = [] # hold all edge pairs
-  # Populate connections with edge pairs as a 2-tuple
-  for node in g:
-   for neighbor in node.get_connections():
-     nodeid = node.get_id()
-     neighborid = neighbor.get_id()
-     connections.append((nodeid,neighborid))
-  print unvisited
-  print connections
+	for neighbor in node.get_connections():
+	  #print len(unvisited), len(visited), node
+	  search_neighbors(neighbor, unvisited, visited)
+      elif ((len(unvisited)+1)>1): # Are we on the end node?
+        CONNECTED = False 
+           
+def is_connected(g):
+  global CONNECTED
+  visited = []
+  unvisited = [node for node in g] 
+  #unvisited = g.get_vertices() 
+  num_vertices = len(g.get_vertices())
+  while (CONNECTED and (unvisited or (len(visited) != num_vertices))):
+    #print "In while with CONNECTED=%s" %(CONNECTED)
+    node = unvisited[0]  
+    search_neighbors(node, unvisited, visited)
 
-  # Quick check: (# of edges) must equal (# of vertices - 1)
-  if len(connections) < (len(unvisited)-1):
-    return False 
+  if not unvisited:
+    CONNECTED=True
+    return True
   else:
-    connected = True
-
-  #while connected or unvisited:
-  while connected:
-    #node = connections[0][0] 
-    #neighbor = connections[0][1] 
-    for pair in connections:
-      for nodes in pair:
-        print nodes,
-
-    # for debug to break loop
-    print ""
-    connected = False
-  return connected
+    CONNECTED=False
+    return False 
+  return
+    
+def add_nodes_and_node_weights(g):
+  for i in range(g.get_num_nodes()):
+    node_weight = int(random.uniform(g.get_node_min(), g.get_node_max()))
+    g.add_vertex(i, node_weight)
+  return
 ### END functions ###
 
 if __name__ == '__main__':
-
   topology = ""
   alpha = 0
   link_max = 0
@@ -265,10 +272,7 @@ if __name__ == '__main__':
   print "alpha: " + str(g.get_alpha())
   print "link_max: " + str(g.get_link_max())
   """
-
-  for i in range(g.get_num_nodes()):
-    node_weight = int(random.uniform(g.get_node_min(), g.get_node_max()))
-    g.add_vertex(i, node_weight)
+  add_nodes_and_node_weights(g)
 
   if (g.get_topology() == "linear"):
     for i in range(0, g.get_num_nodes()-1):
@@ -295,15 +299,35 @@ if __name__ == '__main__':
           If alpha = 1, result is full graph.
           If alpha = 0, result is graph with no links. """
       for node in g:
-        for other_node in g:
-          if (other_node == node):
+	for other_node in g:
+	  if (other_node == node):
 	    continue
-          else:
-            heads = biased_coin_flip(g) 
-            if heads:
-              link_weight = int(random.uniform(g.get_link_min(), g.get_link_max()))
-              g.add_edge(node.get_id(), other_node.get_id(), link_weight)  
+	  else:
+	    heads = biased_coin_flip(g) 
+	    if heads:
+	      link_weight = int(random.uniform(g.get_link_min(), g.get_link_max()))
+	      g.add_edge(node.get_id(), other_node.get_id(), link_weight)  
+      if not is_connected(g):
+        g.remove_vertices() 
+        add_nodes_and_node_weights(g)
+        attempts = 0
+	while not CONNECTED:
+          attempts = attempts + 1
+          print attempts,
+	  for node in g:
+	    for other_node in g:
+	      if (other_node == node):
+		continue
+	      else:
+		heads = biased_coin_flip(g) 
+		if heads:
+		  link_weight = int(random.uniform(g.get_link_min(), g.get_link_max()))
+		  g.add_edge(node.get_id(), other_node.get_id(), link_weight)  
+	  if not is_connected(g):
+	    g.remove_vertices() 
+            add_nodes_and_node_weights(g)
 
   print_graph(g) 
   #save_graph(g)
-  print is_connected(g)
+  is_connected(g)
+  print CONNECTED
