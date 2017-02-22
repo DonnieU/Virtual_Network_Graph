@@ -164,8 +164,19 @@ def save_graph(g):
   f.flush()
   f.close()
   
+def search_neighbors(node):
+  
 def is_connected(g):
+  visited = []
   unvisited = g.get_vertices() 
+  currNode = unvisited[0]
+  while (len(visited) != len(g.get_vertices()):
+    if unvisited:
+      visited.append(currNode)
+      unvisited.pop(currNode)
+      if node.get_connections():
+    
+    
   connections = [] # hold all edge pairs
   # Populate connections with edge pairs as a 2-tuple
   for node in g:
