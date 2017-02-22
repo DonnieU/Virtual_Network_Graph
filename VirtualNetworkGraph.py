@@ -2,7 +2,8 @@ import sys
 import argparse
 import random
 
-CONNECTED=True
+CONNECTED=True    # Flag used to tell if graph is connected
+KEEP_CHECKING=True # Flag used in functions: check_if_connected() and search_neighbors()
 
 class Vertex:
   def __init__(self, node, node_weight):
@@ -150,7 +151,8 @@ def print_graph(g):
     print node.get_node_weight(),
   
   print ""
-  #""" Debug: Shows current node and adjacent node(s)
+
+  """ Debug: Shows current node and adjacent node(s)
   for node in g:
     print 'g.vert_dict[%s]=%s' %(node.get_id(), g.vert_dict[node.get_id()])
 
@@ -158,7 +160,7 @@ def print_graph(g):
   for node in g:
     print len(node.adjacent.keys()),
   print ""
-  #"""
+  """
 
 ### writes graph out to file w/ filename: <topology>.out
 def save_graph(g):
@@ -172,40 +174,52 @@ def save_graph(g):
   for node in g:
     f.write(str(node.get_node_weight())+ " " )
 
+  f.write("\n")
+
   f.flush()
   f.close()
  
+# Part of quazi-DFS
 def search_neighbors(node, unvisited, visited):
   global CONNECTED
-  if CONNECTED:
+  global KEEP_CHECKING
+  if KEEP_CHECKING:
     if node in unvisited:
       unvisited.remove(node) 
-      #print "Removing node %s from unvisited" %(node)
       visited.append(node)
       if node.get_connections():
-	for neighbor in node.get_connections():
-	  #print len(unvisited), len(visited), node
-	  search_neighbors(neighbor, unvisited, visited)
+        for neighbor in node.get_connections():
+          search_neighbors(neighbor, unvisited, visited)
       elif ((len(unvisited)+1)>1): # Are we on the end node?
+        KEEP_CHECKING = False
         CONNECTED = False 
-           
-def is_connected(g):
+
+"""
+Performs quazi-DFS tree traversal with help from search_neighbors()
+Keeps 2 lists: unvisited (filed with all nodes) and visited (empty list)
+unvisited: has nodes removed as they're visited; also used to get neighbors
+  of node and traverses them recursively.           
+visited: as nodes are visited they get added here. Used as to break
+  out of while loop by checking (# of nodes visited = # of total nodes)
+KEEP_CHECKING: another check to know when to stop. Needed due to sloppiness
+  of quazi-DFS implementation.
+CONNECTED: "Is graph connected?"    
+"""
+def check_if_connected(g):
   global CONNECTED
+  global KEEP_CHECKING
+  KEEP_CHECKING=True
   visited = []
   unvisited = [node for node in g] 
-  #unvisited = g.get_vertices() 
   num_vertices = len(g.get_vertices())
-  while (CONNECTED and (unvisited or (len(visited) != num_vertices))):
-    #print "In while with CONNECTED=%s" %(CONNECTED)
+  while (KEEP_CHECKING and (unvisited or (len(visited) != num_vertices))):
     node = unvisited[0]  
     search_neighbors(node, unvisited, visited)
 
   if not unvisited:
     CONNECTED=True
-    return True
   else:
     CONNECTED=False
-    return False 
   return
     
 def add_nodes_and_node_weights(g):
@@ -213,6 +227,25 @@ def add_nodes_and_node_weights(g):
     node_weight = int(random.uniform(g.get_node_min(), g.get_node_max()))
     g.add_vertex(i, node_weight)
   return
+
+
+""" Generates edges based on biased coin flip:
+    If heads: add edge
+    else: do not add edge
+  Iterates over each possible pair of nodes.
+  If alpha = 1, result is full graph.
+  If alpha = 0, result is graph with no links. """
+def generate_random_graph(g):
+  for node in g:
+    for other_node in g:
+      if (other_node == node):
+        continue
+      else:
+        heads = biased_coin_flip(g) 
+        if heads:
+          link_weight = int(random.uniform(g.get_link_min(), g.get_link_max()))
+          g.add_edge(node.get_id(), other_node.get_id(), link_weight)  
+
 ### END functions ###
 
 if __name__ == '__main__':
@@ -237,15 +270,25 @@ if __name__ == '__main__':
 
   g = Graph()
 
+  num_nodes = 0
+  topology = ""
+  alpha = 0
+  node_min = node_max=0
+  link_min = link_max=0
+  attempts = 1
+  
   # Parse file line by line...
   for line in f:
     lhs, rhs = line.split(":")
     lhs = lhs.lower()
     #print lhs, rhs
     if (lhs == "nodes"):
-      g.set_num_nodes(int(rhs))
+      num_nodes = int(rhs)
+      g.set_num_nodes(num_nodes)
     elif (lhs == "topology"):
-      g.set_topology(str(rhs).strip().lower())  # removes leading and ending whitespace; makes lowercase
+      topology = str(rhs).strip().lower()
+      #g.set_topology(str(rhs).strip().lower())  # removes leading and ending whitespace; makes lowercase
+      g.set_topology(topology)
     elif ((lhs == "alpha") and (g.get_topology() == "random")):
       alpha = int(float(rhs)*100)
       g.set_alpha(alpha)
@@ -254,13 +297,21 @@ if __name__ == '__main__':
         print "Invalid range for alpha! Must be a decimal from 0.0-1.0"
         sys.exit()
     elif (lhs == "node-min"):
-      g.set_node_min(int(rhs))
+      node_min = int(rhs)
+      g.set_node_min(node_min)
+      #g.set_node_min(int(rhs))
     elif (lhs == "node-max"):
-      g.set_node_max(int(rhs))
+      node_max = int(rhs)
+      g.set_node_max(node_max)
+      #g.set_node_max(int(rhs))
     elif (lhs == "link-min"):
-      g.set_link_min(int(rhs))
+      link_min = int(rhs)
+      g.set_link_min(link_min)
+      #g.set_link_min(int(rhs))
     elif (lhs == "link-max"):
-      g.set_link_max(int(rhs))
+      link_max = int(rhs)
+      g.set_link_max(link_max)
+      #g.set_link_max(int(rhs))
     else:
       continue
 
@@ -292,42 +343,33 @@ if __name__ == '__main__':
       """ Make no connections """
       pass
     else:
-      """ Generates edges based on biased coin flip:
-            If heads: add edge
-            else: do not add edge
-          Iterates over each possible pair of nodes.
-          If alpha = 1, result is full graph.
-          If alpha = 0, result is graph with no links. """
-      for node in g:
-	for other_node in g:
-	  if (other_node == node):
-	    continue
-	  else:
-	    heads = biased_coin_flip(g) 
-	    if heads:
-	      link_weight = int(random.uniform(g.get_link_min(), g.get_link_max()))
-	      g.add_edge(node.get_id(), other_node.get_id(), link_weight)  
-      if not is_connected(g):
-        g.remove_vertices() 
+      # Random edges based on alpha
+      generate_random_graph(g) 
+      check_if_connected(g) 
+      #attempts = 1
+      # Keep trying to generate a connected graph...
+      while not CONNECTED:  
+        #print attempts, g.get_alpha(),
+        #print CONNECTED
+        attempts = attempts + 1
+        del g
+        g = Graph() # Start fresh....
+        g.set_num_nodes(num_nodes) 
+        g.set_topology(topology)
+        g.set_alpha(alpha)
+        g.set_node_min(node_min)
+        g.set_node_max(node_max)
+        g.set_link_min(link_min)
+        g.set_link_max(link_max)
         add_nodes_and_node_weights(g)
-        attempts = 0
-	while not CONNECTED:
-          attempts = attempts + 1
-          print attempts,
-	  for node in g:
-	    for other_node in g:
-	      if (other_node == node):
-		continue
-	      else:
-		heads = biased_coin_flip(g) 
-		if heads:
-		  link_weight = int(random.uniform(g.get_link_min(), g.get_link_max()))
-		  g.add_edge(node.get_id(), other_node.get_id(), link_weight)  
-	  if not is_connected(g):
-	    g.remove_vertices() 
-            add_nodes_and_node_weights(g)
+        generate_random_graph(g)
+        check_if_connected(g)
 
-  print_graph(g) 
-  #save_graph(g)
-  is_connected(g)
-  print CONNECTED
+  # Write graph to file...
+  save_graph(g)
+
+# Debug....
+  #print_graph(g) 
+  #check_if_connected(g)
+  #print attempts, g.get_alpha()
+  #print CONNECTED
